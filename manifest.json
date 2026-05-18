@@ -1,0 +1,25 @@
+{
+  "name": "IR Store",
+  "short_name": "IR Store",
+  "description": "",
+  "start_url": "/irstorebeta/",
+  "scope": "/irstorebeta/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#ff0a0a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/irstorebeta/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/irstorebeta/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
