@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>IR Tools Portal｜アイアール株式会社</title>
+    <style>
+        :root {
+            --ir-red: #e01b24;
+            --ir-red-dark: #b01219;
+            --ir-red-light: #ff4d55;
+            --ir-red-glow: rgba(224,27,36,0.15);
+            --bg: #0d0d0d;
+            --bg2: #141414;
+            --bg3: #1c1c1c;
+            --card: #1a1a1a;
+            --card-hover: #222;
+            --border: #272727;
+            --border-light: #333;
+            --text: #f5f5f5;
+            --text-sub: #999;
+            --text-muted: #555;
+            --sidebar-w: 220px;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: -apple-system, 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ===== LAYOUT ===== */
+        .app-layout { display: flex; min-height: 100vh; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: var(--sidebar-w);
+            min-width: var(--sidebar-w);
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            overflow-y: auto;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-logo {
+            padding: 20px 18px 16px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .logo-mark {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--ir-red), var(--ir-red-dark));
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; font-weight: 900; color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px var(--ir-red-glow);
+        }
+        .logo-texts .t1 { font-size: 0.9rem; font-weight: 800; }
+        .logo-texts .t2 { font-size: 0.65rem; color: var(--text-sub); }
+        .sidebar-search {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .search-wrap { position: relative; }
+        .search-wrap::before {
+            content: '🔍';
+            position: absolute; left: 8px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.72rem; pointer-events: none;
+        }
+        .sidebar-search input {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 8px 12px 8px 30px;
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+        .sidebar-search input::placeholder { color: var(--text-muted); }
+        .sidebar-search input:focus { outline: none; border-color: var(--ir-red); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 8px 0 20px; }
+        .nav-section-label {
+            padding: 10px 18px 4px;
+            font-size: 0.68rem; font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.8px; text-transform: uppercase;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 18px;
+            cursor: pointer;
+            font-size: 0.85rem; color: var(--text-sub);
+            position: relative;
+            transition: background 0.15s;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        .nav-item:hover { background: var(--bg3); color: var(--text); }
+        .nav-item.active {
+            background: var(--ir-red-glow);
+            color: var(--ir-red-light); font-weight: 600;
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute; left: 0; top: 20%; bottom: 20%;
+            width: 3px; background: var(--ir-red);
+            border-radius: 0 2px 2px 0;
+        }
+        .nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+        .nav-item span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+        .nav-count {
+            margin-left: auto;
+            background: var(--bg3); border: 1px solid var(--border-light);
+            font-size: 0.65rem; color: var(--text-muted);
+            padding: 1px 6px; border-radius: 10px;
+            flex-shrink: 0;
+        }
+        .nav-item.active .nav-count {
+            background: var(--ir-red-glow);
+            border-color: rgba(224,27,36,0.3);
+            color: var(--ir-red-light);
+        }
+        .nav-sub-item { padding-left: 46px; font-size: 0.8rem; }
+
+        /* ===== MAIN ===== */
+        .main-area {
+            margin-left: var(--sidebar-w);
+            width: calc(100% - var(--sidebar-w));
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-header {
+            background: rgba(13,13,13,0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 28px;
+            height: 52px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 40;
+            flex-shrink: 0;
+        }
+        .main-header-title { font-size: 1rem; font-weight: 700; }
+        .header-badge {
+            background: var(--ir-red-glow);
+            border: 1px solid rgba(224,27,36,0.3);
+            color: var(--ir-red-light);
+            font-size: 0.72rem; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px;
+            flex-shrink: 0;
+        }
+
+        /* ===== NEWS TICKER ===== */
+        .news-ticker {
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            height: 36px;
+            display: flex; align-items: center;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .ticker-label {
+            background: var(--ir-red);
+            color: #fff;
+            font-size: 0.65rem; font-weight: 800;
+            padding: 0 12px;
+            height: 100%;
+            display: flex; align-items: center;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .ticker-track-wrap {
+            flex: 1; overflow: hidden;
+            position: relative;
+        }
+        .ticker-track {
+            display: flex; align-items: center;
+            animation: tickerScroll 30s linear infinite;
+            white-space: nowrap;
+        }
+        .ticker-track:hover { animation-play-state: paused; }
+        .ticker-item {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 0 32px 0 0;
+            font-size: 0.78rem; color: var(--text-sub);
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .ticker-item:hover { color: var(--text); }
+        .ticker-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .ticker-date { color: var(--text-muted); font-size: 0.72rem; }
+        @keyframes tickerScroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* ===== PAGE CONTENT ===== */
+        .page-content { padding: 28px; flex: 1; }
+
+        /* ===== HERO BANNER ===== */
+        .hero-banner-row {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            grid-template-rows: 260px;
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+        .hero-banner {
+            border-radius: 18px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 24px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            /* 重要：writing-modeを明示的に横書きに固定 */
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+        }
+        .hero-banner:hover { transform: scale(1.01); box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+        .hero-banner-bg {
+            position: absolute; inset: 0; z-index: 0;
+            overflow: hidden;
+        }
+        .hero-banner-bg-emoji {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 7rem; opacity: 0.15;
+            /* 絵文字が縦並びにならないよう固定 */
+            writing-mode: horizontal-tb;
+        }
+        .hero-banner-overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.05) 60%);
+        }
+        .hero-banner-content {
+            position: relative; z-index: 2;
+            writing-mode: horizontal-tb;
+        }
+        .hero-eyebrow {
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+            margin-bottom: 8px; opacity: 0.9;
+            display: block;
+        }
+        .hero-banner-title {
+            font-size: 1.5rem; font-weight: 800; line-height: 1.25;
+            margin-bottom: 6px;
+            display: block;
+            word-break: keep-all;
+        }
+        .hero-banner-sub {
+            font-size: 0.82rem; color: rgba(255,255,255,0.75);
+            display: block;
+            word-break: break-all;
+        }
+
+        /* サブバナー */
+        .sub-banners {
+            display: flex; flex-direction: column; gap: 16px;
+            overflow: hidden;
+        }
+        .sub-banner {
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            flex: 1;
+            display: flex; align-items: flex-end; padding: 14px;
+            transition: transform 0.2s;
+            writing-mode: horizontal-tb;
+        }
+        .sub-banner:hover { transform: scale(1.02); }
+        .sub-banner-bg {
+            position: absolute; inset: 0; z-index: 0; overflow: hidden;
+        }
+        .sub-banner-bg-emoji {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 4rem; opacity: 0.18;
+            writing-mode: horizontal-tb;
+        }
+        .sub-banner-overlay {
+            position: absolute; inset: 0; z-index: 1;
+            background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, transparent 70%);
+        }
+        .sub-banner-content {
+            position: relative; z-index: 2;
+            writing-mode: horizontal-tb;
+        }
+        .sub-banner-label {
+            font-size: 0.68rem; font-weight: 700;
+            letter-spacing: 0.5px; opacity: 0.85;
+            margin-bottom: 3px; display: block;
+        }
+        .sub-banner-title {
+            font-size: 0.95rem; font-weight: 800;
+            display: block; word-break: keep-all;
+        }
+
+        /* ===== SECTION ===== */
+        .section-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .section-h {
+            font-size: 1.1rem; font-weight: 800;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-count {
+            font-size: 0.72rem; font-weight: 600; color: var(--text-muted);
+            background: var(--bg3); border: 1px solid var(--border);
+            padding: 2px 8px; border-radius: 10px;
+        }
+        .see-all { font-size: 0.8rem; color: var(--ir-red-light); cursor: pointer; font-weight: 600; }
+        .see-all:hover { text-decoration: underline; }
+
+        /* ===== SHELF ===== */
+        .shelf-wrap { margin-bottom: 36px; }
+        .shelf {
+            display: flex; gap: 14px;
+            overflow-x: auto; padding-bottom: 8px;
+            scroll-snap-type: x mandatory;
+        }
+        .shelf::-webkit-scrollbar { height: 4px; }
+        .shelf::-webkit-scrollbar-track { background: transparent; }
+        .shelf::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 2px; }
+
+        /* ===== SHELF TOOL CARD ===== */
+        .shelf-tool-card {
+            flex-shrink: 0; width: 200px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px;
+            cursor: pointer; scroll-snap-align: start;
+            transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .shelf-tool-card:hover {
+            background: var(--card-hover); border-color: var(--border-light);
+            transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+        }
+        .shelf-tool-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+        .shelf-tool-name { font-size: 0.88rem; font-weight: 700; line-height: 1.3; }
+        .shelf-tool-desc { font-size: 0.75rem; color: var(--text-sub); line-height: 1.5; flex: 1; }
+        .shelf-tool-footer { display: flex; align-items: center; justify-content: space-between; }
+        .tool-tag { font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+        .tag-calc  { background: rgba(34,197,94,0.12);  color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .tag-doc   { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.2); }
+        .tag-study { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .tag-soon  { background: rgba(148,163,184,0.1); color: #64748b; border: 1px solid rgba(148,163,184,0.15); }
+        .open-btn {
+            width: 26px; height: 26px; background: var(--bg3);
+            border-radius: 7px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; color: var(--text-sub);
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .shelf-tool-card:hover .open-btn { background: var(--ir-red); color: #fff; }
+
+        /* ===== NEWS SHELF CARD ===== */
+        .shelf-news-card {
+            flex-shrink: 0; width: 260px;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 16px;
+            cursor: pointer; scroll-snap-align: start;
+            transition: background 0.15s, transform 0.15s;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .shelf-news-card:hover { background: var(--card-hover); border-color: var(--border-light); transform: translateY(-2px); }
+        .news-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .news-type-badge { font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 6px; flex-shrink: 0; }
+        .news-type-release { background: rgba(34,197,94,0.12);  color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .news-type-update  { background: rgba(56,189,248,0.12); color: #38bdf8; border: 1px solid rgba(56,189,248,0.2); }
+        .news-type-fix     { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .news-type-info    { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.15); }
+        .news-card-date  { font-size: 0.7rem; color: var(--text-muted); }
+        .news-card-title { font-size: 0.9rem; font-weight: 700; line-height: 1.3; }
+        .news-card-body  { font-size: 0.77rem; color: var(--text-sub); line-height: 1.5; flex: 1; }
+
+        /* ===== GRID TOOL CARD ===== */
+        .tool-grid-section { margin-bottom: 36px; }
+        .tool-grid-2col {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+        .grid-tool-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 18px;
+            cursor: pointer; display: flex; gap: 14px; align-items: flex-start;
+            transition: background 0.15s, border-color 0.15s, transform 0.15s;
+        }
+        .grid-tool-card:hover {
+            background: var(--card-hover); border-color: var(--border-light); transform: translateY(-2px);
+        }
+        .grid-tool-icon {
+            width: 48px; height: 48px; flex-shrink: 0;
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        }
+        .grid-tool-body { flex: 1; min-width: 0; }
+        .grid-tool-name { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+        .grid-tool-desc { font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
+        .grid-tool-tag  { margin-top: 8px; display: inline-block; }
+
+        /* ===== NEWS LIST PAGE ===== */
+        .news-list { display: flex; flex-direction: column; gap: 12px; }
+        .news-list-item {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 16px 18px;
+            display: flex; gap: 14px; align-items: flex-start;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .news-list-item:hover { background: var(--card-hover); border-color: var(--border-light); }
+        .news-list-body { flex: 1; min-width: 0; }
+        .news-list-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+        .news-list-desc  { font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
+        .news-list-meta  { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; min-width: 90px; }
+        .news-list-date  { font-size: 0.72rem; color: var(--text-muted); }
+
+        /* ===== DIVIDER ===== */
+        .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+            z-index: 200;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal {
+            background: var(--bg2); border: 1px solid var(--border-light);
+            border-radius: 20px; width: 100%; max-width: 440px; padding: 28px;
+            transform: translateY(20px); transition: transform 0.2s;
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-overlay.open .modal { transform: translateY(0); }
+        .modal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .modal-icon-wrap {
+            width: 64px; height: 64px; border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; margin: 0 auto 16px;
+        }
+        .modal-name { font-size: 1.1rem; font-weight: 800; text-align: center; margin-bottom: 8px; }
+        .modal-desc { font-size: 0.87rem; color: var(--text-sub); text-align: center; line-height: 1.7; margin-bottom: 24px; }
+        .modal-close {
+            background: var(--bg3); border: none;
+            width: 32px; height: 32px; border-radius: 8px;
+            color: var(--text-sub); font-size: 1rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        .modal-close:hover { background: var(--ir-red); color: #fff; }
+        .modal-open-btn {
+            display: block; width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--ir-red), var(--ir-red-dark));
+            border: none; border-radius: 12px;
+            color: #fff; font-size: 0.95rem; font-weight: 700;
+            cursor: pointer; text-align: center; text-decoration: none;
+            box-shadow: 0 4px 20px var(--ir-red-glow);
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        .modal-open-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .modal-open-btn.disabled { opacity: 0.4; pointer-events: none; }
+
+        /* ===== FOOTER ===== */
+        .site-footer {
+            background: var(--bg2); border-top: 1px solid var(--border);
+            padding: 18px 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px;
+            flex-shrink: 0;
+        }
+        .footer-logo { display: flex; align-items: center; gap: 8px; }
+        .footer-logo-mark {
+            width: 26px; height: 26px;
+            background: linear-gradient(135deg, var(--ir-red), var(--ir-red-dark));
+            border-radius: 7px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.6rem; font-weight: 900; color: #fff;
+        }
+        .footer-text { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* ===== MOBILE ===== */
+        .mobile-bar {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+            background: rgba(20,20,20,0.97);
+            backdrop-filter: blur(14px);
+            border-top: 1px solid var(--border);
+            padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+        }
+        .mobile-bar-inner { display: flex; justify-content: space-around; }
+        .mobile-tab {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 3px; padding: 4px 10px;
+            font-size: 0.6rem; color: var(--text-muted);
+            cursor: pointer; transition: color 0.15s;
+        }
+        .mobile-tab .mt-icon { font-size: 1.2rem; }
+        .mobile-tab.active { color: var(--ir-red-light); }
+
+        @media (max-width: 700px) {
+            .sidebar { display: none; }
+            .main-area { margin-left: 0; width: 100%; }
+            .mobile-bar { display: block; }
+            .page-content { padding: 16px 16px 80px; }
+            .main-header { padding: 0 16px; }
+            .hero-banner-row { grid-template-columns: 1fr; grid-template-rows: auto; }
+            .hero-banner { min-height: 200px; }
+            .sub-banners { flex-direction: row; }
+            .sub-banner { min-height: 120px; }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.3s ease forwards; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+    </style>
+
+  <link rel="manifest" href="/irstorebeta/manifest.json">
+  <meta name="theme-color" content="#ff0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IR Store">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="/irstorebeta/icon-192.png">
+  <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/irstorebeta/sw.js').catch(()=>{});});}</script>
+</head>
+<body>
+<div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-mark">IR</div>
+            <div class="logo-texts">
+                <div class="t1">IR Tools</div>
+                <div class="t2">アイアール株式会社</div>
+            </div>
+        </div>
+        <div class="sidebar-search">
+            <div class="search-wrap">
+                <input type="text" id="sideSearch" placeholder="検索">
+            </div>
+        </div>
+        <nav class="sidebar-nav" id="sidebarNav"></nav>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main-area">
+        <header class="main-header">
+            <span class="main-header-title" id="mainHeaderTitle">Today</span>
+            <span class="header-badge">社員専用</span>
+        </header>
+
+        <div class="news-ticker">
+            <span class="ticker-label">NEW</span>
+            <div class="ticker-track-wrap">
+                <div class="ticker-track" id="tickerTrack"></div>
+            </div>
+        </div>
+
+        <div class="page-content" id="pageContent"></div>
+
+        <footer class="site-footer">
+            <div class="footer-logo">
+                <div class="footer-logo-mark">IR</div>
+                <span class="footer-text">IR Tools Portal｜アイアール株式会社</span>
+            </div>
+            <span class="footer-text">建設業を人気業種にする © IR Inc.</span>
+        </footer>
+    </div>
+</div>
+
+<!-- MOBILE BOTTOM BAR -->
+<div class="mobile-bar">
+    <div class="mobile-bar-inner">
+        <div class="mobile-tab active"  onclick="navigateTo('today')">        <span class="mt-icon">✦</span>Today</div>
+        <div class="mobile-tab"         onclick="navigateTo('general')">      <span class="mt-icon">💼</span>業務一般</div>
+        <div class="mobile-tab"         onclick="navigateTo('construction')"> <span class="mt-icon">🏗️</span>施工管理</div>
+        <div class="mobile-tab"         onclick="navigateTo('study')">        <span class="mt-icon">📚</span>学習支援</div>
+        <div class="mobile-tab"         onclick="navigateTo('news')">         <span class="mt-icon">📢</span>お知らせ</div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <div class="modal-top">
+            <span style="font-size:0.8rem;color:var(--text-muted);" id="modalCategory"></span>
+            <button class="modal-close" id="modalClose">✕</button>
+        </div>
+        <div class="modal-icon-wrap" id="modalIcon"></div>
+        <div class="modal-name"      id="modalName"></div>
+        <div class="modal-desc"      id="modalDesc"></div>
+        <a href="#" class="modal-open-btn" id="modalBtn" target="_blank">▶ ツールを開く</a>
+    </div>
+</div>
+
+<script>
+/* ===== お知らせデータ ===== */
+const NEWS = [
+    { id:'n001', type:'release', typeLabel:'新規リリース', date:'2026.05.18', title:'電圧降下計算機 公開',
+      body:'内線規程に基づく電圧降下率の判定ツールを公開しました。配電方式・ケーブルサイズ・こう長を入力するだけで合否判定と計算根拠を出力します。', color:'#22c55e' },
+    { id:'n002', type:'release', typeLabel:'新規リリース', date:'2026.05.18', title:'照度・灯数計算機 公開',
+      body:'光束法による必要灯数シミュレーターを公開しました。室指数・照明率・保守率を自動計算し、配置グリッドも視覚化します。', color:'#22c55e' },
+    { id:'n003', type:'release', typeLabel:'新規リリース', date:'2026.05.18', title:'IR Tools Portal オープン',
+      body:'アイアール株式会社の社内ツールポータルサイトを正式オープンしました。今後も続々とツールを追加予定です。', color:'#22c55e' },
+    { id:'n004', type:'info', typeLabel:'お知らせ', date:'2026.05.10', title:'施工管理系ツール 順次追加予定',
+      body:'土木・建築・設備・安全管理・工程管理など、施工管理全般のツールを順次追加していきます。', color:'#94a3b8' },
+    { id:'n005', type:'info', typeLabel:'お知らせ', date:'2026.05.01', title:'資格取得学習ツール 開発中',
+      body:'2級施工管理技士シリーズ（電気・管・建築・土木・造園・建設機械・電気通信）の一問一答学習ツールを開発中です。', color:'#94a3b8' }
+];
+
+/* ===== ナビゲーション構造 ===== */
+const NAV_STRUCTURE = [
+    { id:'top', label:null, items:[
+        { id:'today', icon:'✦',  name:'Today',    sub:false },
+        { id:'news',  icon:'📢', name:'お知らせ', sub:false }
+    ]},
+    { id:'general', label:'業務一般', items:[
+        { id:'general',          icon:'💼', name:'すべて',             sub:false },
+        { id:'general-doc',      icon:'📄', name:'書類・帳票',         sub:true  },
+        { id:'general-calc',     icon:'🧮', name:'汎用計算',           sub:true  },
+        { id:'general-convert',  icon:'🔄', name:'単位変換',           sub:true  },
+        { id:'general-comm',     icon:'💬', name:'コミュニケーション', sub:true  }
+    ]},
+    { id:'construction', label:'施工管理', items:[
+        { id:'construction',          icon:'🏗️', name:'すべて',       sub:false },
+        { id:'const-electrical',      icon:'⚡',  name:'電気工事',     sub:true  },
+        { id:'const-mechanical',      icon:'🔧',  name:'設備工事',     sub:true  },
+        { id:'const-civil',           icon:'🏔️',  name:'土木工事',     sub:true  },
+        { id:'const-architecture',    icon:'🏛️',  name:'建築工事',     sub:true  },
+        { id:'const-landscaping',     icon:'🌿',  name:'造園工事',     sub:true  },
+        { id:'const-machinery',       icon:'🚧',  name:'建設機械',     sub:true  },
+        { id:'const-telecom',         icon:'📡',  name:'電気通信工事', sub:true  },
+        { id:'const-safety',          icon:'🦺',  name:'安全管理',     sub:true  },
+        { id:'const-process',         icon:'📅',  name:'工程管理',     sub:true  }
+    ]},
+    { id:'study', label:'学習支援', items:[
+        { id:'study',            icon:'📚', name:'すべて',         sub:false },
+        { id:'study-license',    icon:'📝', name:'資格取得対策',   sub:true  },
+        { id:'study-knowledge',  icon:'🧠', name:'現場知識・法規', sub:true  },
+        { id:'study-plan',       icon:'🗓️', name:'学習計画ツール', sub:true  }
+    ]}
+];
+
+/* ===== ツールデータ ===== */
+const TOOLS = [
+    /* 業務一般 */
+    { id:'daily-report',    category:'general-doc',
+      name:'日報作成アシスタント',
+      desc:'作業内容・人員・進捗を入力するだけで整形された日報テキストを自動生成。コピー&ペーストで即提出できる。',
+      icon:'📋', iconBg:'rgba(56,189,248,0.15)', tag:'doc', tagName:'書類', date:'近日公開', url:'#', featured:false },
+    { id:'attendance',      category:'general-doc',
+      name:'工数・時間管理シート',
+      desc:'現場ごとの作業時間を記録・集計。月次集計も自動で出力できる。',
+      icon:'⏱️', iconBg:'rgba(56,189,248,0.15)', tag:'doc', tagName:'書類', date:'近日公開', url:'#', featured:false },
+    { id:'unit-convert',    category:'general-convert',
+      name:'単位変換ツール',
+      desc:'長さ・面積・重量・電力など建設現場でよく使う単位をワンクリックで変換。',
+      icon:'🔄', iconBg:'rgba(56,189,248,0.15)', tag:'calc', tagName:'計算', date:'近日公開', url:'#', featured:false },
+    { id:'power-current',   category:'general-calc',
+      name:'電力×電流変換器',
+      desc:'「○○kWで何アンペア？」を瞬時に解決。単相・三相を選ぶだけで自動計算。',
+      icon:'🔋', iconBg:'rgba(245,158,11,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#',
+      featured:true, featuredBg:'linear-gradient(135deg,#0d1117,#1a2744)', featuredColor:'#38bdf8', featuredLabel:'業務一般' },
+    { id:'scale-factor',    category:'general-calc',
+      name:'図面係数計算ツール',
+      desc:'三角スケールで測った測測値と図面縮尺から実寸を即計算。',
+      icon:'📐', iconBg:'rgba(167,139,250,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#', featured:false },
+    /* 施工管理：電気 */
+    { id:'voltage-drop',    category:'const-electrical',
+      name:'電圧降下計算機',
+      desc:'内線規程に基づき電圧降下率を自動判定。配電方式・ケーブルサイズ・こう長を入力するだけ。計算根拠も出力。',
+      icon:'⚡', iconBg:'rgba(245,158,11,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#',
+      featured:true, featuredBg:'linear-gradient(135deg,#1a1200,#2d2000)', featuredColor:'#f59e0b', featuredLabel:'電気工事' },
+    { id:'current-capacity',category:'const-electrical',
+      name:'許容電流計算機',
+      desc:'設定条件を入力することで許容電流を計算し過負荷・不適合を判定。',
+      icon:'🔌', iconBg:'rgba(245,158,11,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#', featured:false },
+    { id:'occupancy-rate',  category:'const-electrical',
+      name:'占有率計算機',
+      desc:'配管と配線を設定して占有率が適格か不適格かを判定。内線規程の許容値と照合。',
+      icon:'📊', iconBg:'rgba(245,158,11,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#', featured:false },
+    { id:'pullbox',         category:'const-electrical',
+      name:'プルボックス計算機',
+      desc:'経由する配線数・種別などを設定し適当なプルボックスの最小寸法を算出。',
+      icon:'📦', iconBg:'rgba(245,158,11,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#', featured:false },
+    { id:'lighting-sim',    category:'const-electrical',
+      name:'照度・灯数計算機',
+      desc:'光束法による必要灯数シミュレーター。室指数・照明率・保守率を自動計算し配置グリッドも視覚化。',
+      icon:'💡', iconBg:'rgba(56,189,248,0.15)', tag:'calc', tagName:'計算', date:'2026.04.21', url:'#', featured:false },
+    /* 施工管理：設備 */
+    { id:'pipe-size',       category:'const-mechanical',
+      name:'配管サイズ計算機',
+      desc:'流量・流速から適切な配管径を算出。給排水・空調配管の設計に対応。',
+      icon:'🔧', iconBg:'rgba(34,197,94,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    { id:'heat-load',       category:'const-mechanical',
+      name:'空調負荷計算機',
+      desc:'室面積・窓面積・断熱仕様から概算空調負荷を計算。機器選定の参考に。',
+      icon:'❄️', iconBg:'rgba(34,197,94,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 施工管理：土木 */
+    { id:'earthwork-vol',   category:'const-civil',
+      name:'土量計算機',
+      desc:'切土・盛土の体積を断面積と延長から計算。土量変化率も考慮して出力。',
+      icon:'🏔️', iconBg:'rgba(120,113,108,0.2)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    { id:'slope-check',     category:'const-civil',
+      name:'法面勾配チェッカー',
+      desc:'掘削・盛土の法面勾配が基準値以内かを判定。土質条件別に許容勾配を参照。',
+      icon:'📏', iconBg:'rgba(120,113,108,0.2)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 施工管理：建築 */
+    { id:'concrete-vol',    category:'const-architecture',
+      name:'コンクリート数量計算機',
+      desc:'構造部位ごとの寸法を入力してコンクリート打設量を自動集計。',
+      icon:'🏛️', iconBg:'rgba(148,163,184,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    { id:'rebar-calc',      category:'const-architecture',
+      name:'鉄筋数量計算機',
+      desc:'配筋図から鉄筋の本数・重量を自動集計。鉄骨・RC造に対応。',
+      icon:'⚙️', iconBg:'rgba(148,163,184,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 施工管理：造園 */
+    { id:'planting-area',   category:'const-landscaping',
+      name:'植栽面積・数量計算機',
+      desc:'植栽エリアの面積と植栽間隔から必要な植栽本数を自動計算。',
+      icon:'🌿', iconBg:'rgba(34,197,94,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 施工管理：建設機械 */
+    { id:'machine-output',  category:'const-machinery',
+      name:'建設機械作業量計算機',
+      desc:'バックホウ・ブルドーザーなど主要建設機械の1日あたり標準作業量を算出。',
+      icon:'🚧', iconBg:'rgba(245,158,11,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 施工管理：電気通信 */
+    { id:'cable-loss',      category:'const-telecom',
+      name:'伝送損失計算機',
+      desc:'通信ケーブルの距離・種別から信号の伝送損失を計算。端末への到達レベルを確認。',
+      icon:'📡', iconBg:'rgba(129,140,248,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 施工管理：安全 */
+    { id:'risk-assess',     category:'const-safety',
+      name:'リスクアセスメント支援',
+      desc:'作業内容を選択するとリスク項目と対策をリスト化。KY活動の下書きとして活用できる。',
+      icon:'🦺', iconBg:'rgba(239,68,68,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#',
+      featured:true, featuredBg:'linear-gradient(135deg,#1a0505,#2d0a0a)', featuredColor:'#ef4444', featuredLabel:'安全管理' },
+    /* 施工管理：工程 */
+    { id:'process-chart',   category:'const-process',
+      name:'工程表ジェネレーター',
+      desc:'作業項目と期間を入力するだけでバーチャートを自動生成。そのままPDF出力可能。',
+      icon:'📅', iconBg:'rgba(129,140,248,0.15)', tag:'soon', tagName:'近日公開', date:'近日公開', url:'#', featured:false },
+    /* 学習支援 */
+    { id:'study-2eke',      category:'study-license',
+      name:'2級電気工事施工管理 一問一答',
+      desc:'2級電気工事施工管理技士の一問一答形式学習ツール。正答率トラッキング付き。',
+      icon:'⚡', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#',
+      featured:true, featuredBg:'linear-gradient(135deg,#1a0505,#280808)', featuredColor:'#ff4d55', featuredLabel:'資格取得対策' },
+    { id:'study-2kem',      category:'study-license',
+      name:'2級管工事施工管理 一問一答',
+      desc:'2級管工事施工管理技士の過去問ベース学習ツール。分野別に絞って学習できる。',
+      icon:'🔧', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-2ken',      category:'study-license',
+      name:'2級建築施工管理 一問一答',
+      desc:'2級建築施工管理技士の一問一答形式学習ツール。',
+      icon:'🏗️', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-2dob',      category:'study-license',
+      name:'2級土木施工管理 一問一答',
+      desc:'2級土木施工管理技士の一問一答形式学習ツール。',
+      icon:'🏔️', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-2zoo',      category:'study-license',
+      name:'2級造園施工管理 一問一答',
+      desc:'2級造園施工管理技士の一問一答形式学習ツール。',
+      icon:'🌿', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-2kik',      category:'study-license',
+      name:'2級建設機械施工管理 一問一答',
+      desc:'2級建設機械施工技士の一問一答形式学習ツール。',
+      icon:'🚧', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-2tsuu',     category:'study-license',
+      name:'2級電気通信工事施工管理 一問一答',
+      desc:'2級電気通信工事施工管理技士の一問一答形式学習ツール。',
+      icon:'📡', iconBg:'rgba(224,27,36,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-plan',      category:'study-plan',
+      name:'資格取得学習プランナー',
+      desc:'試験日から逆算して学習スケジュールを自動生成。毎日の学習ノルマを可視化。',
+      icon:'🗓️', iconBg:'rgba(245,158,11,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false },
+    { id:'study-law',       category:'study-knowledge',
+      name:'建設関連法規クイック参照',
+      desc:'内線規程・建設業法・労働安全衛生法の主要条文を素早く検索・参照できる。',
+      icon:'📖', iconBg:'rgba(245,158,11,0.15)', tag:'study', tagName:'学習', date:'近日公開', url:'#', featured:false }
+];
+
+/* ===== 状態 ===== */
+const State = { currentPage:'today', searchQuery:'' };
+
+/* ===== ユーティリティ ===== */
+const PARENT_MAP = {
+    'general':      ['general-doc','general-calc','general-convert','general-comm'],
+    'construction': ['const-electrical','const-mechanical','const-civil','const-architecture','const-landscaping','const-machinery','const-telecom','const-safety','const-process'],
+    'study':        ['study-license','study-knowledge','study-plan']
+};
+function getToolsByCategory(id) {
+    return PARENT_MAP[id] ? TOOLS.filter(t => PARENT_MAP[id].includes(t.category)) : TOOLS.filter(t => t.category === id);
+}
+function getToolCount(id) { return getToolsByCategory(id).length; }
+function getFeatured()    { return TOOLS.filter(t => t.featured); }
+function getAllNavItems()  { return NAV_STRUCTURE.flatMap(g => g.items); }
+function tagHtml(tag, label) {
+    const cls = {calc:'tag-calc',doc:'tag-doc',study:'tag-study',soon:'tag-soon'}[tag]||'tag-soon';
+    return `<span class="tool-tag ${cls}">${label}</span>`;
+}
+function newsTypeCls(type) {
+    return {release:'news-type-release',update:'news-type-update',fix:'news-type-fix',info:'news-type-info'}[type]||'news-type-info';
+}
+
+/* ===== ティッカー ===== */
+function buildTicker() {
+    const items = NEWS.slice(0,3).map(n =>
+        `<span class="ticker-item" onclick="navigateTo('news')">
+            <span class="ticker-dot" style="background:${n.color}"></span>
+            <span class="ticker-date">${n.date}</span>
+            <span>${n.title}</span>
+        </span>`
+    ).join('');
+    document.getElementById('tickerTrack').innerHTML = items + items;
+}
+
+/* ===== サイドバー ===== */
+function buildSidebar() {
+    let html = '';
+    NAV_STRUCTURE.forEach(group => {
+        if (group.label) html += `<div class="nav-section-label">${group.label}</div>`;
+        group.items.forEach(item => {
+            const count  = item.id==='today' ? TOOLS.length : item.id==='news' ? NEWS.length : getToolCount(item.id);
+            const active = State.currentPage===item.id ? 'active' : '';
+            const sub    = item.sub ? 'nav-sub-item' : '';
+            html += `<div class="nav-item ${active} ${sub}" onclick="navigateTo('${item.id}')">
+                <span class="nav-icon">${item.icon}</span>
+                <span>${item.name}</span>
+                <span class="nav-count">${count}</span>
+            </div>`;
+        });
+    });
+    document.getElementById('sidebarNav').innerHTML = html;
+}
+
+/* ===== ナビゲーション ===== */
+function navigateTo(pageId) {
+    State.currentPage = pageId;
+    State.searchQuery = '';
+    document.getElementById('sideSearch').value = '';
+    buildSidebar();
+    renderPage();
+    const topId = ['today','news','general','construction','study'].includes(pageId) ? pageId
+        : pageId.startsWith('general')   ? 'general'
+        : pageId.startsWith('const')     ? 'construction'
+        : pageId.startsWith('study')     ? 'study' : 'today';
+    document.querySelectorAll('.mobile-tab').forEach((t,i) => {
+        t.classList.toggle('active', ['today','general','construction','study','news'][i]===topId);
+    });
+}
+
+function renderPage() {
+    const navItem = getAllNavItems().find(i => i.id===State.currentPage);
+    document.getElementById('mainHeaderTitle').textContent =
+        State.currentPage==='today' ? 'Today' : navItem ? `${navItem.icon} ${navItem.name}` : '';
+    const html = State.currentPage==='today'        ? renderToday()
+               : State.currentPage==='news'         ? renderNewsPage()
+               : renderCategoryPage(State.currentPage);
+    document.getElementById('pageContent').innerHTML = html;
+}
+
+/* ===== Today ===== */
+function renderToday() {
+    const featured    = getFeatured();
+    const mainFeat    = featured[0];
+    const subFeats    = featured.slice(1,3);
+    const recentTools = TOOLS.filter(t => t.date!=='近日公開').slice(0,8);
+    const comingSoon  = TOOLS.filter(t => t.date==='近日公開').slice(0,8);
+
+    const mainBannerHtml = mainFeat ? `
+        <div class="hero-banner" onclick="openModal('${mainFeat.id}')">
+            <div class="hero-banner-bg" style="background:${mainFeat.featuredBg||'var(--bg3)'}">
+                <div class="hero-banner-bg-emoji">${mainFeat.icon}</div>
+            </div>
+            <div class="hero-banner-overlay"></div>
+            <div class="hero-banner-content">
+                <span class="hero-eyebrow" style="color:${mainFeat.featuredColor||'#fff'}">${mainFeat.featuredLabel||''}</span>
+                <span class="hero-banner-title">${mainFeat.name}</span>
+                <span class="hero-banner-sub">${mainFeat.desc.slice(0,44)}…</span>
+            </div>
+        </div>` : '';
+
+    const subBannersHtml = `
+        <div class="sub-banners">
+            ${subFeats.map(t => `
+            <div class="sub-banner" onclick="openModal('${t.id}')">
+                <div class="sub-banner-bg" style="background:${t.featuredBg||'var(--bg3)'}">
+                    <div class="sub-banner-bg-emoji">${t.icon}</div>
+                </div>
+                <div class="sub-banner-overlay"></div>
+                <div class="sub-banner-content">
+                    <span class="sub-banner-label" style="color:${t.featuredColor||'#fff'}">${t.featuredLabel||''}</span>
+                    <span class="sub-banner-title">${t.name}</span>
+                </div>
+            </div>`).join('')}
+        </div>`;
+
+    return `<div class="fade-up">
+        <div class="hero-banner-row">${mainBannerHtml}${subBannersHtml}</div>
+
+        <div class="shelf-wrap">
+            <div class="section-row">
+                <div class="section-h">📢 最新のお知らせ <span class="section-count">${NEWS.length} 件</span></div>
+                <span class="see-all" onclick="navigateTo('news')">すべて見る</span>
+            </div>
+            <div class="shelf">
+                ${NEWS.slice(0,5).map(n => `
+                <div class="shelf-news-card" onclick="navigateTo('news')">
+                    <div class="news-card-top">
+                        <span class="news-type-badge ${newsTypeCls(n.type)}">${n.typeLabel}</span>
+                        <span class="news-card-date">${n.date}</span>
+                    </div>
+                    <div class="news-card-title">${n.title}</div>
+                    <div class="news-card-body">${n.body.slice(0,60)}…</div>
+                </div>`).join('')}
+            </div>
+        </div>
+
+        <div class="shelf-wrap">
+            <div class="section-row">
+                <div class="section-h">🛠️ 使えるツール <span class="section-count">${recentTools.length} 件</span></div>
+                <span class="see-all" onclick="navigateTo('construction')">すべて見る</span>
+            </div>
+            <div class="shelf">${recentTools.map(t => shelfCard(t)).join('')}</div>
+        </div>
+
+        <div class="shelf-wrap">
+            <div class="section-row">
+                <div class="section-h">🔜 近日公開 <span class="section-count">${comingSoon.length} 件</span></div>
+            </div>
+            <div class="shelf">${comingSoon.map(t => shelfCard(t)).join('')}</div>
+        </div>
+
+        <hr class="divider">
+        <div class="section-row"><div class="section-h">📁 カテゴリから探す</div></div>
+        <div class="tool-grid-2col" style="margin-bottom:32px;">
+            ${[
+                {id:'general',      icon:'💼', name:'業務一般',  desc:'書類・計算・変換など全分野共通のツール',                      bg:'rgba(56,189,248,0.08)',  border:'rgba(56,189,248,0.15)'},
+                {id:'construction', icon:'🏗️', name:'施工管理',  desc:'電気・設備・土木・建築・造園・機械・通信・安全・工程管理',    bg:'rgba(245,158,11,0.08)',  border:'rgba(245,158,11,0.15)'},
+                {id:'study',        icon:'📚', name:'学習支援',  desc:'資格対策・法規参照・学習プランナー',                          bg:'rgba(224,27,36,0.08)',   border:'rgba(224,27,36,0.15)'}
+            ].map(cat => `
+            <div class="grid-tool-card" onclick="navigateTo('${cat.id}')" style="background:${cat.bg};border-color:${cat.border};">
+                <div class="grid-tool-icon" style="background:${cat.bg};font-size:1.8rem;">${cat.icon}</div>
+                <div class="grid-tool-body">
+                    <div class="grid-tool-name" style="font-size:1rem;">${cat.name}</div>
+                    <div class="grid-tool-desc">${cat.desc}</div>
+                    <div class="grid-tool-tag">${tagHtml('doc', getToolCount(cat.id)+' ツール')}</div>
+                </div>
+            </div>`).join('')}
+        </div>
+    </div>`;
+}
+
+/* ===== お知らせページ ===== */
+function renderNewsPage() {
+    return `<div class="fade-up"><div class="news-list">
+        ${NEWS.map(n => `
+        <div class="news-list-item">
+            <div class="news-list-body">
+                <div class="news-list-title">${n.title}</div>
+                <div class="news-list-desc">${n.body}</div>
+            </div>
+            <div class="news-list-meta">
+                <span class="news-type-badge ${newsTypeCls(n.type)}">${n.typeLabel}</span>
+                <span class="news-list-date">${n.date}</span>
+            </div>
+        </div>`).join('')}
+    </div></div>`;
+}
+
+/* ===== カテゴリページ ===== */
+function renderCategoryPage(catId) {
+    const tools = getToolsByCategory(catId);
+    if (!tools.length) return `<div style="text-align:center;padding:80px 20px;color:var(--text-muted);">
+        <div style="font-size:3rem;margin-bottom:12px;">🔍</div><p>該当するツールがありません</p></div>`;
+    const groups = {};
+    tools.forEach(t => { if (!groups[t.category]) groups[t.category]=[]; groups[t.category].push(t); });
+    return `<div class="fade-up">` +
+        Object.entries(groups).map(([sub, list]) => {
+            const item = getAllNavItems().find(i => i.id===sub);
+            const label = item ? `${item.icon} ${item.name}` : sub;
+            return `<div class="tool-grid-section">
+                <div class="section-row">
+                    <div class="section-h">${label} <span class="section-count">${list.length} 件</span></div>
+                </div>
+                <div class="tool-grid-2col">
+                    ${list.map(t => `
+                    <div class="grid-tool-card" onclick="openModal('${t.id}')">
+                        <div class="grid-tool-icon" style="background:${t.iconBg};">${t.icon}</div>
+                        <div class="grid-tool-body">
+                            <div class="grid-tool-name">${t.name}</div>
+                            <div class="grid-tool-desc">${t.desc}</div>
+                            <div class="grid-tool-tag">${tagHtml(t.tag,t.tagName)}</div>
+                        </div>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }).join('') + `</div>`;
+}
+
+/* ===== シェルフカード ===== */
+function shelfCard(t) {
+    return `<div class="shelf-tool-card" onclick="openModal('${t.id}')">
+        <div class="shelf-tool-icon" style="background:${t.iconBg};">${t.icon}</div>
+        <div class="shelf-tool-name">${t.name}</div>
+        <div class="shelf-tool-desc">${t.desc.slice(0,50)}…</div>
+        <div class="shelf-tool-footer">${tagHtml(t.tag,t.tagName)}<div class="open-btn">→</div></div>
+    </div>`;
+}
+
+/* ===== モーダル ===== */
+function openModal(toolId) {
+    const t = TOOLS.find(t => t.id===toolId);
+    if (!t) return;
+    const item = getAllNavItems().find(i => i.id===t.category);
+    document.getElementById('modalCategory').textContent = item ? `${item.icon} ${item.name}` : '';
+    document.getElementById('modalIcon').style.background = t.iconBg;
+    document.getElementById('modalIcon').textContent = t.icon;
+    document.getElementById('modalName').textContent = t.name;
+    document.getElementById('modalDesc').textContent = t.desc;
+    const btn = document.getElementById('modalBtn');
+    btn.href = t.url && t.url!=='#' ? t.url : '#';
+    btn.textContent = t.url && t.url!=='#' ? '▶ ツールを開く' : '🔒 近日公開予定';
+    btn.className = t.url && t.url!=='#' ? 'modal-open-btn' : 'modal-open-btn disabled';
+    document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+/* ===== 検索 ===== */
+function handleSearch(q) {
+    if (!q.trim()) { renderPage(); return; }
+    const results = TOOLS.filter(t =>
+        t.name.toLowerCase().includes(q.toLowerCase()) || t.desc.toLowerCase().includes(q.toLowerCase())
+    );
+    document.getElementById('mainHeaderTitle').textContent = `🔍 "${q}"`;
+    document.getElementById('pageContent').innerHTML = results.length
+        ? `<div class="fade-up"><div class="tool-grid-2col">
+            ${results.map(t => `
+            <div class="grid-tool-card" onclick="openModal('${t.id}')">
+                <div class="grid-tool-icon" style="background:${t.iconBg};">${t.icon}</div>
+                <div class="grid-tool-body">
+                    <div class="grid-tool-name">${t.name}</div>
+                    <div class="grid-tool-desc">${t.desc}</div>
+                    <div class="grid-tool-tag">${tagHtml(t.tag,t.tagName)}</div>
+                </div>
+            </div>`).join('')}
+           </div></div>`
+        : `<div style="text-align:center;padding:80px 20px;color:var(--text-muted);">
+            <div style="font-size:3rem;margin-bottom:12px;">🔍</div><p>該当なし</p></div>`;
+}
+
+/* ===== 初期化 ===== */
+document.addEventListener('DOMContentLoaded', () => {
+    buildTicker();
+    buildSidebar();
+    renderPage();
+    document.getElementById('sideSearch').addEventListener('input', e => handleSearch(e.target.value));
+    document.getElementById('modalClose').addEventListener('click', closeModal);
+    document.getElementById('modalOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+});
+</script>
+</body>
+</html>
